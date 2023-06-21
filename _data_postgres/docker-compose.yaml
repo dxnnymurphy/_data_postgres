@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+  #######################################################################
+  ### services :: _data_postgres
+  #######################################################################
+  _data_postgres:
+    image: postgres:15.2
+    privileged: true
+    restart: always
+    env_file:
+    - $PWD/.secret/__envrc.d/credential._data_postgres.envrc
+    - $PWD/config/__envrc.d/_data_postgres.envrc
+    networks:
+    - _network-bridge-local
+    ports:
+    - 5432:5432
+    healthcheck:
+      test: curl -f http://127.0.0.1:5432
+      retries: 6
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+    volumes:
+    - _volume__data_postgres:/var/lib/postgresql/data
+    - $PWD/config/_data_postgres/.default/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '1m'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          #memory: 4G
+
+  #######################################################################
+  ### services :: _data_postgres_pgadmin4
+  #######################################################################
+  _data_postgres_pgadmin4:
+    image: dpage/pgadmin4:6.21
+    privileged: true
+    restart: always
+    env_file:
+    - $PWD/.secret/__envrc.d/credential._data_postgres_pgadmin4.envrc
+    - $PWD/config/__envrc.d/_data_postgres_pgadmin4.envrc
+    depends_on:
+    - _data_postgres
+    networks:
+    - _network-bridge-local
+    ports:
+    - 55432:8080
+    healthcheck:
+      test: curl -f http://127.0.0.1:8080
+      retries: 6
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+    volumes:
+    - _volume__data_postgres_pgadmin4:/var/lib/pgadmin
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '1m'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          #memory: 1G
+
+networks:
+  _network-bridge-local:
+    driver: bridge
+
+volumes:
+  _volume__data_postgres: {}
+  _volume__data_postgres_pgadmin4: {}
